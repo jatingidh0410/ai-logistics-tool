@@ -3,7 +3,7 @@ import { open, Database } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
-import { Shipment, ShipmentHistory, ShipmentStatus } from '../types/index.js';
+import { Shipment, ShipmentHistory, ShipmentStatus, ShipmentFilterOptions } from '../types/index.js';
 
 dotenv.config();
 
@@ -238,6 +238,65 @@ export async function getAllShipmentsFromDb(statusFilter?: string, searchQuery?:
 
   return [];
 }
+
+export async function getShipmentsWithFiltersFromDb(filters: ShipmentFilterOptions): Promise<Shipment[]> {
+  let queryStr = 'SELECT * FROM shipments WHERE 1=1';
+  const params: any[] = [];
+
+  if (filters.status && filters.status !== 'ALL') {
+    if (filters.status.toLowerCase() === 'delayed' || filters.isDelayed) {
+      queryStr += ` AND (current_status = 'Customs Hold' OR (current_status != 'Delivered' AND expected_delivery_date < '${new Date().toISOString()}'))`;
+    } else {
+      params.push(filters.status);
+      queryStr += isPgAvailable ? ` AND current_status = $${params.length}` : ` AND current_status = ?`;
+    }
+  } else if (filters.isDelayed) {
+    queryStr += ` AND (current_status = 'Customs Hold' OR (current_status != 'Delivered' AND expected_delivery_date < '${new Date().toISOString()}'))`;
+  }
+
+  if (filters.origin && filters.origin.trim() !== '') {
+    const originPattern = `%${filters.origin.trim().toLowerCase()}%`;
+    params.push(originPattern);
+    queryStr += isPgAvailable ? ` AND LOWER(origin) LIKE $${params.length}` : ` AND LOWER(origin) LIKE ?`;
+  }
+
+  if (filters.destination && filters.destination.trim() !== '') {
+    const destPattern = `%${filters.destination.trim().toLowerCase()}%`;
+    params.push(destPattern);
+    queryStr += isPgAvailable ? ` AND LOWER(destination) LIKE $${params.length}` : ` AND LOWER(destination) LIKE ?`;
+  }
+
+  if (filters.carrier && filters.carrier.trim() !== '') {
+    const carrierPattern = `%${filters.carrier.trim().toLowerCase()}%`;
+    params.push(carrierPattern);
+    queryStr += isPgAvailable ? ` AND LOWER(carrier) LIKE $${params.length}` : ` AND LOWER(carrier) LIKE ?`;
+  }
+
+  if (filters.searchQuery && filters.searchQuery.trim() !== '') {
+    const searchPattern = `%${filters.searchQuery.trim().toLowerCase()}%`;
+    params.push(searchPattern);
+    const paramIdx = params.length;
+    if (isPgAvailable) {
+      queryStr += ` AND (LOWER(reference_number) LIKE $${paramIdx} OR LOWER(origin) LIKE $${paramIdx} OR LOWER(destination) LIKE $${paramIdx} OR LOWER(notes) LIKE $${paramIdx})`;
+    } else {
+      queryStr += ` AND (LOWER(reference_number) LIKE ? OR LOWER(origin) LIKE ? OR LOWER(destination) LIKE ? OR LOWER(notes) LIKE ?)`;
+      params.push(searchPattern, searchPattern, searchPattern);
+    }
+  }
+
+  queryStr += ' ORDER BY created_at DESC';
+
+  if (isPgAvailable && pgPool) {
+    const res = await pgPool.query(queryStr, params);
+    return res.rows as Shipment[];
+  } else if (sqliteDb) {
+    const rows = await sqliteDb.all(queryStr, params);
+    return rows as Shipment[];
+  }
+
+  return [];
+}
+
 
 export async function getShipmentByIdFromDb(id: string): Promise<(Shipment & { history: ShipmentHistory[] }) | null> {
   let shipment: Shipment | null = null;

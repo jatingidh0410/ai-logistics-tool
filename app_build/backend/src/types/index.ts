@@ -40,3 +40,28 @@ export interface UpdateShipmentStatusInput {
   status: ShipmentStatus;
   location_comment?: string;
 }
+
+export interface ShipmentFilterOptions {
+  status?: string;
+  origin?: string;
+  destination?: string;
+  carrier?: string;
+  searchQuery?: string;
+  isDelayed?: boolean;
+}
+
+export interface ParsedNLQuery {
+  extractedFilters: ShipmentFilterOptions;
+  explanation: string;
+}
+
+export interface ParsedDocumentData {
+  reference_number: string;
+  origin: string;
+  destination: string;
+  expected_delivery_date: string;
+  carrier: string;
+  notes: string;
+  confidenceScore: number;
+}
+

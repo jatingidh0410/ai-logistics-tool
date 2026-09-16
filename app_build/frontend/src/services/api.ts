@@ -71,3 +71,38 @@ export async function fetchShipmentHistory(id: string): Promise<ShipmentHistory[
   const json = await response.json();
   return json.data || [];
 }
+
+export async function executeAIQuery(query: string) {
+  const response = await fetch(`${API_BASE_URL}/ai/query`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  });
+
+  const json = await response.json();
+  if (!response.ok) {
+    throw new Error(json.error || 'Failed to execute natural language query');
+  }
+
+  return json;
+}
+
+export async function parseDocumentText(documentText: string) {
+  const response = await fetch(`${API_BASE_URL}/ai/parse-doc`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ documentText }),
+  });
+
+  const json = await response.json();
+  if (!response.ok) {
+    throw new Error(json.error || 'Failed to parse document text');
+  }
+
+  return json.data;
+}
+

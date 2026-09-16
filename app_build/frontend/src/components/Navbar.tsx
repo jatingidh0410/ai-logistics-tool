@@ -1,13 +1,14 @@
 import React from 'react';
-import { Ship, Plus, RefreshCw, Layers } from 'lucide-react';
+import { Ship, Plus, RefreshCw, FileText, Sparkles } from 'lucide-react';
 
 interface NavbarProps {
   onOpenCreateModal: () => void;
+  onOpenDocParserModal: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenCreateModal, onRefresh, isRefreshing }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenCreateModal, onOpenDocParserModal, onRefresh, isRefreshing }) => {
   return (
     <header className="sticky top-0 z-30 w-full glass-panel border-b border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -40,6 +41,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreateModal, onRefresh, is
           </button>
 
           <button
+            onClick={onOpenDocParserModal}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-medium text-sm text-slate-200 bg-slate-800/80 hover:bg-slate-700/80 border border-indigo-500/30 hover:border-indigo-400/50 shadow-md transition-all duration-200"
+          >
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <span>Doc Parser</span>
+          </button>
+
+          <button
             onClick={onOpenCreateModal}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/50 transition-all duration-200 border border-indigo-400/30 active:scale-95"
           >
@@ -52,3 +61,4 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCreateModal, onRefresh, is
     </header>
   );
 };
+

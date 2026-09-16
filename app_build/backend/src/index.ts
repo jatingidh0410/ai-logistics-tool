@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { initDb } from './db/index.js';
 import shipmentRoutes from './routes/shipmentRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 dotenv.config();
 
@@ -21,6 +22,8 @@ app.use(morgan('dev'));
 
 // API Routes
 app.use('/api', shipmentRoutes);
+app.use('/api/ai', aiRoutes);
+
 
 // Health Check Endpoint
 app.get('/api/health', (req, res) => {

@@ -44,3 +44,30 @@ export interface UpdateStatusInput {
   status: ShipmentStatus;
   location_comment?: string;
 }
+
+export interface ExtractedAIFilters {
+  status?: string;
+  origin?: string;
+  destination?: string;
+  carrier?: string;
+  isDelayed?: boolean;
+  searchQuery?: string;
+}
+
+export interface AIQueryResult {
+  explanation: string;
+  extractedFilters: ExtractedAIFilters;
+  count: number;
+  shipments: Shipment[];
+}
+
+export interface ParsedDocumentData {
+  reference_number: string;
+  origin: string;
+  destination: string;
+  expected_delivery_date: string;
+  carrier: string;
+  notes: string;
+  confidenceScore: number;
+}
+

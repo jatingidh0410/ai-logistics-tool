@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Shipment } from './types/shipment';
-import { fetchShipments } from './services/api';
+import { Shipment, AIQueryResult } from './types/shipment';
+import { fetchShipments, executeAIQuery } from './services/api';
 import { Navbar } from './components/Navbar';
 import { MetricsHeader } from './components/MetricsHeader';
 import { ShipmentCard } from './components/ShipmentCard';
 import { ShipmentDetailModal } from './components/ShipmentDetailModal';
 import { CreateShipmentModal } from './components/CreateShipmentModal';
 import { StatusUpdateModal } from './components/StatusUpdateModal';
+import { AISearchBar } from './components/AISearchBar';
+import { SmartDocumentParserModal } from './components/SmartDocumentParserModal';
 import { Search, Filter, PackageSearch, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -18,10 +20,15 @@ export const App: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // AI Natural Language Query state
+  const [isAISearching, setIsAISearching] = useState<boolean>(false);
+  const [aiQueryResult, setAiQueryResult] = useState<AIQueryResult | null>(null);
+
   // Modals state
   const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
   const [shipmentToUpdate, setShipmentToUpdate] = useState<Shipment | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
+  const [isDocParserOpen, setIsDocParserOpen] = useState<boolean>(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -36,11 +43,32 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleAIQuery = async (query: string) => {
+    setIsAISearching(true);
+    setError(null);
+    try {
+      const result: AIQueryResult = await executeAIQuery(query);
+      setAiQueryResult(result);
+      setShipments(result.shipments);
+    } catch (err: any) {
+      setError(err.message || 'Failed to execute natural language AI query');
+    } finally {
+      setIsAISearching(false);
+    }
+  };
+
+  const handleClearAIQuery = () => {
+    setAiQueryResult(null);
+    loadData();
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadData();
-    }, 250);
-    return () => clearTimeout(timer);
+    if (!aiQueryResult) {
+      const timer = setTimeout(() => {
+        loadData();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
   }, [statusFilter, searchQuery]);
 
   return (
@@ -49,7 +77,11 @@ export const App: React.FC = () => {
       {/* Navbar */}
       <Navbar
         onOpenCreateModal={() => setIsCreateOpen(true)}
-        onRefresh={loadData}
+        onOpenDocParserModal={() => setIsDocParserOpen(true)}
+        onRefresh={() => {
+          setAiQueryResult(null);
+          loadData();
+        }}
         isRefreshing={loading}
       />
 
@@ -62,15 +94,26 @@ export const App: React.FC = () => {
             Cargo Tracking & Logistics Operations
           </h1>
           <p className="text-slate-400 text-sm max-w-2xl leading-relaxed">
-            Monitor real-time cargo movement, review granular status progression audit histories, and record location updates across global freight routes.
+            Monitor real-time cargo movement, review granular status audit logs, search using Natural Language AI, and extract tracking IDs from unstructured documents.
           </p>
         </div>
+
+        {/* AI Natural Language Search Bar */}
+        <AISearchBar
+          onSearch={handleAIQuery}
+          onClear={handleClearAIQuery}
+          isLoading={isAISearching}
+          aiResult={aiQueryResult}
+        />
 
         {/* Metrics Counters */}
         <MetricsHeader
           shipments={shipments}
           activeFilter={statusFilter}
-          onSelectFilter={(status) => setStatusFilter(status)}
+          onSelectFilter={(status) => {
+            setAiQueryResult(null);
+            setStatusFilter(status);
+          }}
         />
 
         {/* Control Bar: Search & Status Selector */}
@@ -83,7 +126,10 @@ export const App: React.FC = () => {
               type="text"
               placeholder="Search by Ref Number, Origin, Destination..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setAiQueryResult(null);
+                setSearchQuery(e.target.value);
+              }}
               className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-100 text-xs placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
             />
             {searchQuery && (
@@ -102,7 +148,10 @@ export const App: React.FC = () => {
             <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Filter Status:</span>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setAiQueryResult(null);
+                setStatusFilter(e.target.value);
+              }}
               className="w-full sm:w-48 px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-100 text-xs font-semibold focus:outline-none focus:border-indigo-500 transition-all"
             >
               <option value="ALL">All Statuses</option>
@@ -141,8 +190,8 @@ export const App: React.FC = () => {
             </div>
             <h3 className="text-lg font-bold text-white mb-1">No Shipments Found</h3>
             <p className="text-xs text-slate-400 max-w-sm mx-auto mb-6">
-              {searchQuery || statusFilter !== 'ALL'
-                ? 'No shipments match your current search query or filter criteria. Try adjusting your parameters.'
+              {searchQuery || statusFilter !== 'ALL' || aiQueryResult
+                ? 'No shipments match your current natural language query or filter criteria.'
                 : 'Your shipment tracker database is currently empty.'}
             </p>
             <button
@@ -192,8 +241,15 @@ export const App: React.FC = () => {
         onSuccess={loadData}
       />
 
+      <SmartDocumentParserModal
+        isOpen={isDocParserOpen}
+        onClose={() => setIsDocParserOpen(false)}
+        onShipmentCreated={loadData}
+      />
+
     </div>
   );
 };
 
 export default App;
+
