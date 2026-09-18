@@ -162,22 +162,4 @@ To scale the Shipment Status Tracker for high-frequency dashboard reads and conc
 
 ---
 
-## 📤 How to Push to GitHub Repo
-
-To commit this updated root `README.md` and push it to your remote GitHub repository (`https://github.com/jatingidh0410/ai-logistics-tool.git`), run the following commands in your terminal:
-
-```bash
-# 1. Stage the new root README and removed nested README
-git add README.md
-git rm app_build/README.md
-
-# 2. Commit the changes
-git commit -m "docs: move and update main README.md to repository root with full feature coverage"
-
-# 3. Push to GitHub
-git push origin main
-```
-
----
-
 *Engineered for Nagarkot Forwarders Pvt. Ltd. | September 2026*
